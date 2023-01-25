@@ -1,1 +1,1 @@
-# difference-equations-fem
+# Differential Equations solver using FEM
