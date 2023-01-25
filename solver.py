@@ -9,8 +9,12 @@ def E(x):
 
 # returns value of B(e_i, e_j)
 def B(w, v, der_w, der_v, lower, upper):
-    integral = sp.quad(lambda x: E(x) * der_w(x) * der_v(x), lower, upper, limit=100)
-    return - 2.0 * w(0) * v(0) + integral[0]
+    f1 = lambda x: 2.0 * der_w(x) * der_v(x)
+    f2 = lambda x: 6.0 * der_w(x) * der_v(x)
+
+    i1 = sp.quad(f1, 0, 1, epsabs=10e-10, limit=100)
+    i2 = sp.quad(f2, 1, 2, epsabs=10e-10, limit=100)
+    return i1[0] + i2[0] - 2.0 * w(0) * v(0)
 
 
 # returns value of L(v) in this case it's constant
@@ -29,11 +33,18 @@ def u_prim():
 def make_matrix(n, left, right):
     b_matrix = np.zeros((n + 1, n + 1))
     l_matrix = np.zeros(n + 1)
+    h = 2 / n
     for i in range(n):
         for j in range(n + 1):
-            b_matrix[i][j] = B(e_i(j, n), e_i(i, n),
-                               de_i(j, n), de_i(i, n),
-                               left, right)
+
+            if abs(i - j) > 1:
+                b_matrix[i][j] = 0.0
+
+            else:
+
+                b_matrix[i][j] = B(e_i(j, n), e_i(i, n),
+                                   de_i(j, n), de_i(i, n),
+                                   left, right)
         l_matrix[i] = - B(u_(), e_i(i, n), u_prim(), de_i(i, n), left,
                           right) + L(e_i(i, n))
     for i in range(n):
@@ -75,31 +86,14 @@ if __name__ == "__main__":
     # l = int(input("l = "))
     # r = int(input("r = "))
 
-    n = 13
+    n = 25
     matrixes = make_matrix(n, 0, 2)
     b_u_v = matrixes[0]
     l_v = matrixes[1]
 
-    print(b_u_v.tolist())
+    print(b_u_v)
     print(l_v.tolist())
 
     ans = np.linalg.solve(b_u_v, l_v)
 
     draw_chart(ans, n)
-
-    # print(make_matrix(10, 0, 2))
-    #
-    # ans = np.linalg.solve(*make_matrix(10, 0, 2))
-    # # print(ans)
-    # draw_chart(ans, 10, 0, 2)
-    #
-    # x = np.arange(0.0, 2.0, 0.0001)
-    # y = np.zeros(20000)
-    #
-    # for i in range(20000):
-    #     y[i] = (de_i(0, 10)(x[i]))
-    #
-    # plot.plot(x, y)
-    # plot.show()
-    #
-    # print(B(e(0, 10, 0, 2), e(0, 10, 0, 2), e_prim(0, 10, 0, 2), e_prim(0, 10, 0, 2), 0, 2))
