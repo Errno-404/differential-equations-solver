@@ -6,14 +6,14 @@ import numpy as np
 import matplotlib.pyplot as plot
 
 
-# zwraca obliczoną wartość B(ei, ej)
-def B(w, v, der_w, der_v):
-    f1 = lambda x: 2.0 * der_w(x) * der_v(x)
-    f2 = lambda x: 6.0 * der_w(x) * der_v(x)
+def E(x):
+    return 2.0 if 0.0 <= x <= 1 else 6.0
 
-    i1 = sp.quad(f1, 0, 1, limit=100)
-    i2 = sp.quad(f2, 1, 2, limit=100)
-    return i1[0] + i2[0] - 2.0 * w(0) * v(0)
+
+# zwraca obliczoną wartość B(ei, ej)
+def B(w, v, dw, dv, left, right):
+    integral = sp.quad(lambda x: E(x) * dw(x) * dv(x), left, right, limit=100)
+    return integral[0] - 2.0 * w(0) * v(0)
 
 
 # zwraca wartość L(v) przed shiftem
@@ -35,6 +35,7 @@ def du_():
 def make_matrix(n):
     b_matrix = np.zeros((n + 1, n + 1))
     l_matrix = np.zeros(n + 1)
+    h = 2 / n
 
     for i in range(n):
         for j in range(n + 1):
@@ -43,11 +44,17 @@ def make_matrix(n):
                 b_matrix[i][j] = 0.0
 
             else:
+                left = max((min(i, j) - 1) * h, 0.0)
+                right = min((max(i, j) + 1) * h, 2.0)
 
-                b_matrix[i][j] = B(e_i(j, n), e_i(i, n),
-                                   de_i(j, n), de_i(i, n),
-                                   )
-        l_matrix[i] = - B(u_(), e_i(i, n), du_(), de_i(i, n)) + L(e_i(i, n))
+                # print("i: ", i, "j: ", j, "left: ", left, "right: ", right)
+
+                b_matrix[i][j] = B(e_i(j, n), e_i(i, n), de_i(j, n), de_i(i, n), left, right)
+
+    for i in range(n):
+        left = max((i - 1) * h, 0.0)
+        right = min((i + 1) * h, 2.0)
+        l_matrix[i] = - B(u_(), e_i(i, n), du_(), de_i(i, n),left, right) + L(e_i(i, n))
 
     for i in range(n):
         b_matrix[n][i] = 0.0
@@ -75,6 +82,7 @@ def e_i(i, n):
     h = 2 / n
     return lambda x: (x - (i - 1) * h) / (i * h - (i - 1) * h) if (i - 1) * h <= x <= i * h else (h * (i + 1) - x) / (
             h * (i + 1) - h * i) if (i * h < x < (i + 1) * h) else 0.0
+
 
 # Pochodna funkcji testującej
 def de_i(i, n):
